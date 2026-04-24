@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover" />
+  <title>🇹🇿 Bongo Market · Seller Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ========== UI YAKO HAIJABADILISHWA ========== */
+    :root {
+      --teal:   #0A7373;
+      --teal-d: #065959;
+      --orange: #F4821A;
+      --orange-d: #D96B08;
+      --cream:  #FFFFFF;
+      --sand:   #F3F4F6;
+      --brown:  #1F2937;
+      --brown-l:#4B5563;
+      --premium: #7C3AED;
+      --trusted-gold-start: #F59E0B;
+      --trusted-gold-end: #D97706;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--cream);
+      color: var(--brown);
+      min-height: 100vh;
+    }
+    h1,h2,h3,h4,h5 { font-family: 'Sora', sans-serif; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--sand); }
+    ::-webkit-scrollbar-thumb { background: var(--teal); border-radius: 3px; }
+
+    #navbar { background: #ffffff; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    .brand-lockup { display: inline-flex; align-items: center; gap: 12px; }
+    .brand-mark { width: 48px; height: 48px; border-radius: 999px; background: var(--teal); color: white; display: flex; align-items: center; justify-content: center; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1rem; box-shadow: 0 4px 10px rgba(10,115,115,0.15); }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
+    .brand-name { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.25rem; color: var(--brown); }
+    .brand-name span { color: var(--orange); }
+    .brand-tagline { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brown-l); }
+
+    .icon-3d { display: inline-block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); transform: perspective(200px) rotateX(2deg) rotateY(0deg); transition: transform 0.15s; }
+    .icon-3d:hover { transform: perspective(200px) rotateX(0deg) rotateY(5deg) scale(1.05); }
+
+    .hero { background: #ffffff; border-bottom: 1px solid #f0f0f0; }
+    .hero-badge { display: inline-block; background: rgba(10,115,115,0.08); border: 1px solid rgba(10,115,115,0.15); border-radius: 999px; padding: 6px 18px; font-size: 0.8rem; color: var(--teal); font-weight: 600; margin-bottom: 16px; }
+
+    .product-card { background: #fff; border-radius: 16px; overflow: hidden; transition: all 0.2s; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #edf2f7; touch-action: manipulation; }
+    .product-card:active { transform: scale(0.98); }
+    .product-card img { width: 100%; height: 200px; object-fit: cover; }
+
+    .btn-primary, .btn-teal, .btn-outline, .btn-wa { touch-action: manipulation; transition: transform 0.1s; }
+    .btn-primary:active, .btn-teal:active, .btn-outline:active { transform: scale(0.97); }
+
+    .btn-primary { background: linear-gradient(135deg, var(--orange) 0%, var(--orange-d) 100%); color: white; font-weight: 700; border-radius: 12px; padding: 10px 22px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(244,130,26,0.25); }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-teal { background: linear-gradient(135deg, var(--teal) 0%, var(--teal-d) 100%); color: white; font-weight: 700; border-radius: 12px; padding: 10px 22px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(10,115,115,0.2); }
+    .btn-wa { background: #25D366; color: white; font-weight: 700; border-radius: 14px; padding: 14px 28px; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(37,211,102,0.3); display: flex; align-items: center; gap: 10px; justify-content: center; }
+    .btn-outline { background: transparent; border: 2px solid var(--teal); color: var(--teal); font-weight: 700; border-radius: 12px; padding: 8px 20px; cursor: pointer; }
+
+    .search-wrap { background: white; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.02); overflow: hidden; display: flex; }
+    .search-wrap input { flex: 1; border: none; outline: none; padding: 12px 16px; }
+    .search-wrap button { background: var(--teal); border: none; padding: 12px 20px; color: white; font-weight: 600; cursor: pointer; }
+
+    .loc-pill { border: 1.5px solid #d1d5db; color: var(--brown); background: white; border-radius: 999px; padding: 6px 18px; cursor: pointer; font-weight: 600; touch-action: manipulation; }
+    .loc-pill.active, .loc-pill:hover { background: var(--teal); border-color: var(--teal); color: white; }
+    .filter-pill { border: 1.5px solid #e2e8f0; color: var(--brown-l); background: white; border-radius: 999px; padding: 6px 18px; cursor: pointer; font-weight: 600; touch-action: manipulation; }
+    .filter-pill.active, .filter-pill:hover { background: var(--teal); border-color: var(--teal); color: white; }
+
+    .badge-loc { display: inline-flex; align-items: center; gap: 4px; background: var(--cream); border-radius: 999px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; color: var(--brown-l); }
+    .cat-tag { display: inline-block; background: #e6f7f7; color: var(--teal-d); border-radius: 6px; padding: 2px 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+
+    .trusted-badge { background: linear-gradient(135deg, #F59E0B 0%, #B45309 100%); color: white; border-radius: 999px; padding: 5px 14px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(245,158,11,0.6), 0 4px 10px rgba(245,158,11,0.4); border: 1px solid rgba(255,255,255,0.3); animation: trustedPulse 2s infinite ease-in-out; letter-spacing: 0.3px; }
+    .trusted-badge i { font-size: 0.9rem; color: #FFD700; filter: drop-shadow(0 0 2px black); }
+    @keyframes trustedPulse {
+      0% { box-shadow: 0 0 8px rgba(245,158,11,0.5), 0 4px 10px rgba(245,158,11,0.3); }
+      50% { box-shadow: 0 0 18px rgba(245,158,11,0.9), 0 6px 14px rgba(245,158,11,0.5); }
+      100% { box-shadow: 0 0 8px rgba(245,158,11,0.5), 0 4px 10px rgba(245,158,11,0.3); }
+    }
+    .premium-badge { background: linear-gradient(135deg, #7C3AED, #4C1D95); color: white; border-radius: 999px; padding: 5px 14px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 10px rgba(124,58,237,0.5); border: 1px solid rgba(255,255,255,0.2); }
+
+    #sidebar { background: #1e293b; min-height: 100vh; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 10px; cursor: pointer; color: #cbd5e1; font-weight: 600; touch-action: manipulation; }
+    .sidebar-link:active { background: rgba(255,255,255,0.1); }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(244,130,26,0.15); color: var(--orange); }
+
+    .form-input { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; outline: none; background: white; font-size: 16px; }
+    .form-input:focus { border-color: var(--teal); }
+
+    #toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1e293b; color: white; border-radius: 12px; padding: 14px 20px; font-weight: 600; transform: translateY(100px); opacity: 0; transition: all 0.3s; max-width: calc(100vw - 40px); }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { background: var(--teal); }
+    #toast.error { background: #dc2626; }
+    #toast.info { background: #3b82f6; }
+
+    .section-title { font-size: 1.8rem; font-weight: 800; color: var(--brown); }
+    .section-title span { color: var(--teal); }
+
+    .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .page { animation: fadeUp 0.3s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+    @media (max-width: 640px) {
+      .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .product-card img { height: 150px; }
+      .section-title { font-size: 1.5rem; }
+      .hero h1 { font-size: 2.2rem; }
+      .hero-badge { font-size: 0.7rem; padding: 4px 12px; }
+    }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--brown-l); }
+    footer { background: #1e293b; color: #e2e8f0; }
+    .footer-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; }
+
+    .upload-area { border: 2px dashed #cbd5e1; border-radius: 16px; padding: 24px; text-align: center; cursor: pointer; transition: border 0.2s; touch-action: manipulation; }
+    .upload-area:active { border-color: var(--teal); background: #f8fafc; }
+
+    .dashboard-tab { padding: 14px 12px; font-weight: 700; border-bottom: 3px solid transparent; cursor: pointer; color: var(--brown-l); transition: all 0.2s; font-size: 1rem; touch-action: manipulation; }
+    .dashboard-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+    .plan-card { border-radius: 20px; padding: 1.5rem 1rem; transition: all 0.2s; }
+    .plan-card.premium { background: linear-gradient(145deg, #1e293b, #0f172a); color: white; transform: scale(1.02); box-shadow: 0 20px 30px -10px rgba(0,0,0,0.2); }
+
+    .support-card { background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #edf2f7; max-width: 600px; margin: 0 auto; }
+    .support-number { font-size: 1.8rem; font-weight: 800; color: var(--teal); letter-spacing: 1px; }
+
+    .upgrade-prompt { background: linear-gradient(135deg, #FFF3CD, #FFE69C); border: 2px solid #FFC107; border-radius: 16px; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; color: #856404; margin-bottom: 20px; font-weight: 600; }
+    .upgrade-prompt i { font-size: 1.8rem; }
+
+    .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+    @media (max-width: 768px) {
+      .mobile-bottom-nav { display: flex; }
+      #seller-content { padding-bottom: 80px; }
+      .plan-card { padding: 1rem; }
+    }
+    .mobile-bottom-nav button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0; color: var(--brown-l); font-weight: 600; font-size: 0.7rem; border: none; background: transparent; cursor: pointer; }
+    .mobile-bottom-nav button.active { color: var(--teal); }
+    .mobile-bottom-nav button i { font-size: 1.4rem; margin-bottom: 4px; }
+
+    .premium-thankyou { text-align: center; background: linear-gradient(145deg, #f0fdf4, #dcfce7); border: 2px solid #bbf7d0; border-radius: 20px; padding: 2rem; margin: 1rem 0; }
+    .premium-thankyou i { font-size: 3rem; color: #16a34a; }
+    .premium-thankyou h3 { color: #166534; margin-top: 0.5rem; }
+
+    .forgot-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
+    .forgot-box { background: white; border-radius: 20px; padding: 30px 25px; max-width: 400px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.15); text-align: center; }
+
+    .payment-return-modal { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
+    .payment-return-box { background: white; border-radius: 20px; padding: 30px 25px; max-width: 400px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; }
+
+    /* CLOSE BUTTON ON PRODUCT PAGE */
+    .close-product {
+      position: absolute; top: 12px; right: 12px; z-index: 10;
+      background: rgba(255,255,255,0.85); border-radius: 50%; width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; font-size: 1.2rem; color: #333;
+    }
+
+    @media (max-width: 480px) {
+      .max-w-7xl { padding-left: 12px; padding-right: 12px; }
+      .btn-primary, .btn-teal, .btn-outline { padding: 10px 16px; font-size: 0.9rem; }
+      .form-input { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body class="bg-white">
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="max-w-7xl mx-auto px-3 md:px-4 py-3 flex items-center justify-between">
+    <button onclick="window.navigate('home')" class="brand-lockup">
+      <span class="brand-mark">BM</span>
+      <span class="brand-text"><span class="brand-name">Bongo<span>Market</span></span><span class="brand-tagline">Zanzibar & Dar</span></span>
+    </button>
+    <div class="hidden md:flex items-center gap-5">
+      <div class="search-wrap" style="min-width:260px;">
+        <input id="nav-search" placeholder="Search products & sellers..." onkeydown="if(event.key==='Enter')window.doSearch(this.value)" />
+        <button onclick="window.doSearch(document.getElementById('nav-search').value)"><i class="fas fa-search icon-3d"></i> Search</button>
+      </div>
+      <button onclick="window.navigate('home')" class="text-gray-700 font-semibold text-sm hover:text-teal-700"><i class="fas fa-home icon-3d mr-1"></i>Home</button>
+      <div id="nav-auth-btns"></div>
+    </div>
+    <div class="flex md:hidden items-center gap-3">
+      <button onclick="document.getElementById('mobile-search-bar').classList.toggle('hidden')" class="text-gray-700 text-xl p-2"><i class="fas fa-search icon-3d"></i></button>
+      <button id="mobile-menu-btn" class="text-gray-700 text-2xl p-2"><i class="fas fa-bars icon-3d"></i></button>
+    </div>
+  </div>
+  <div id="mobile-search-bar" class="hidden px-3 pb-3">
+    <div class="search-wrap">
+      <input id="mob-search" placeholder="Search products & sellers..." onkeydown="if(event.key==='Enter')window.doSearch(this.value)" />
+      <button onclick="window.doSearch(document.getElementById('mob-search').value)"><i class="fas fa-search"></i> Search</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div id="mobile-menu" class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm hidden">
+  <div class="bg-gray-900 w-72 h-full p-6 flex flex-col gap-4 text-white" onclick="event.stopPropagation()">
+    <div class="brand-lockup mb-4"><span class="brand-mark">BM</span><span class="brand-text"><span class="brand-name text-white">Bongo<span class="text-orange-400">Market</span></span></span></div>
+    <a onclick="window.navigate('home');window.closeMobileMenu()" class="sidebar-link"><i class="fas fa-home mr-3"></i> Home</a>
+    <div id="mob-auth-btns"></div>
+  </div>
+</div>
+
+<!-- Main App View -->
+<div id="app"></div>
+
+<!-- Footer -->
+<footer class="mt-16 py-12">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="footer-panel p-6 md:p-10">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <div class="brand-lockup mb-4"><span class="brand-mark">BM</span><span class="brand-text"><span class="brand-name text-white">Bongo<span class="text-orange-400">Market</span></span></span></div>
+          <h3 class="text-2xl font-bold text-white mb-2">Modern market, near you.</h3>
+          <p class="text-gray-300 text-sm mb-4">Buy and sell directly via WhatsApp.</p>
+          <div class="flex gap-3 flex-wrap"><span class="bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Trusted Sellers</span><span class="bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Fast WhatsApp</span></div>
+        </div>
+        <div class="bg-white/5 rounded-2xl p-5 border border-white/10">
+          <p class="text-xs uppercase tracking-wider text-gray-400 mb-3">Start Today</p>
+          <button onclick="window.navigate('auth',{mode:'register'})" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl w-full text-left transition"><span class="block text-sm font-normal text-orange-100"><i class="fas fa-store-alt mr-1"></i>Open Seller Account</span><span class="text-lg">Sell on Bongo →</span></button>
+        </div>
+      </div>
+      <div class="mt-8 pt-6 border-t border-white/10 text-sm text-gray-400 flex justify-between"><span>© 2025 Bongo Market</span><span>Zanzibar · Dar es Salaam</span></div>
+    </div>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="forgot-modal hidden" onclick="closeForgotModal(event)">
+  <div class="forgot-box" onclick="event.stopPropagation()">
+    <h3 class="text-xl font-bold mb-2">Reset Password</h3>
+    <p class="text-sm text-gray-500 mb-4">Enter your email and we'll send you a reset link.</p>
+    <input id="resetEmail" type="email" placeholder="you@example.com" class="form-input mb-3" />
+    <div class="flex gap-3"><button onclick="window.doForgotPassword()" class="btn-primary flex-1 py-2">Send Reset Link</button><button onclick="document.getElementById('forgotPasswordModal').classList.add('hidden')" class="btn-outline flex-1 py-2">Cancel</button></div>
+    <p id="resetMsg" class="text-sm text-center mt-3 hidden"></p>
+  </div>
+</div>
+
+<!-- Payment Return Modal -->
+<div id="paymentReturnModal" class="payment-return-modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="payment-return-box">
+    <i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i>
+    <h3 class="text-xl font-bold mb-2">Payment Submitted!</h3>
+    <p class="text-gray-600 mb-4" style="line-height:1.8;">
+      ✅ Thanks for payment!<br>Wait for admin approval.<br><br>
+      ⏱️ If your account isn't upgraded in <strong>30 minutes</strong>, please contact customer support.<br><br>
+      🛒 Continue selling with BongoMarket.
+    </p>
+    <button onclick="document.getElementById('paymentReturnModal').classList.add('hidden')" class="btn-primary w-full py-3">Got it</button>
+  </div>
+</div>
+
+<script>
+  // ==================== CONFIGURATION ====================
+  const SUPABASE_URL = 'https://xidmmslqehcaxuknypsi.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_2zodTw0usiD_8MPC8uIZHQ_S8wjub9G';
+  const PESAPAL_URLS = {
+    basic: 'https://store.pesapal.com/bongomarket',
+    premium: 'https://store.pesapal.com/bongomarketpremium'
+  };
+  const SUPPORT_WHATSAPP = '255779443545';
+  const CLOUDINARY_CLOUD_NAME = "djubaetjj";
+  const CLOUDINARY_UPLOAD_PRESET = "bongo_market";
+  const EMAILJS_USER_ID = "ULLTZn9MfY7lUSWbm";
+  const EMAILJS_SERVICE_ID = "service_flw52g5";
+  const EMAILJS_TEMPLATE_ID = "template_kekha5x";
+
+  const { createClient } = supabase;
+  const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window._sb = supabaseClient;
+
+  window.currentUser = null;
+  window.currentUserData = null;
+  window.allProducts = [];
+  window.locationFilter = 'all';
+  window.currentCategory = 'All';
+  window.pendingImageFile = null;
+  window.sellerView = 'dashboard';
+  window.currentPage = 'home';
+  const ALL_CATEGORIES = ['Food & Drinks', 'Fashion & Clothing', 'Electronics', 'Home & Living', 'Beauty & Health', 'Crafts & Art', 'Agriculture', 'Services'];
+
+  // Auth state
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    window.currentUser = session?.user || null;
+    if (window.currentUser) { loadUserData(); } else { window.currentUserData = null; }
+    window.updateNavAuth();
+    document.dispatchEvent(new CustomEvent("authchange", { detail: window.currentUser }));
+    if (window.currentPage === 'auth' && window.currentUser) window.navigate('seller');
+  });
+
+  async function loadUserData() {
+    if (!window.currentUser) return;
+    const { data, error } = await supabaseClient.from('users').select('*').eq('id', window.currentUser.id).single();
+    if (error) console.error(error);
+    else { window.currentUserData = data; await checkAndDowngradePlan(); }
+  }
+
+  async function checkAndDowngradePlan() {
+    if (!window.currentUserData) return;
+    const { plan, expiry_date } = window.currentUserData;
+    if ((plan === 'basic' || plan === 'premium') && expiry_date && new Date(expiry_date) < new Date()) {
+      await supabaseClient.from('users').update({ plan: 'free', is_trusted_seller: false }).eq('id', window.currentUser.id);
+      await supabaseClient.from('products').update({ is_recommended: false, seller_plan: 'free' }).eq('user_id', window.currentUser.id);
+      window.currentUserData.plan = 'free'; window.currentUserData.is_trusted_seller = false;
+      window.toast('Your plan has expired.', 'info');
+    }
+  }
+
+  window.toast = (msg, type='success') => {
+    const el = document.getElementById('toast');
+    el.className = `show ${type}`;
+    el.innerHTML = (type==='success'?'✅':type==='error'?'❌':type==='info'?'ℹ️':'✅') + ' ' + msg;
+    setTimeout(() => el.className = '', 3000);
+  };
+  window.closeMobileMenu = () => document.getElementById('mobile-menu').classList.add('hidden');
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => document.getElementById('mobile-menu').classList.remove('hidden'));
+    document.getElementById('mobile-menu').addEventListener('click', (e) => { if (e.target === e.currentTarget) window.closeMobileMenu(); });
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('reset') === 'true') { window.showPasswordResetForm(); return; }
+    if (urlParams.get('payment') === 'done') {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+      }
+      document.getElementById('paymentReturnModal').classList.remove('hidden');
+    }
+  });
+
+  window.navigate = (page, data={}) => {
+    window.currentPage = page; window._navData = data;
+    window.renderPage(page, data); window.scrollTo({ top: 0, behavior: 'smooth' }); window.closeMobileMenu();
+  };
+
+  window.renderPage = (page, data) => {
+    document.querySelector('footer').style.display = (page === 'seller') ? 'none' : '';
+    if (page === 'home') window.renderHome();
+    else if (page === 'product') window.renderProduct(data.id);
+    else if (page === 'search') window.renderSearch(data.q);
+    else if (page === 'auth') window.renderAuth(data.mode || 'login');
+    else if (page === 'seller') window.renderSellerAccount();
+    window.updateNavAuth();
+  };
+
+  window.updateNavAuth = () => {
+    const btns = document.getElementById('nav-auth-btns'), mob = document.getElementById('mob-auth-btns');
+    if (!btns || !mob) return;
+    if (window.currentUser) {
+      btns.innerHTML = `<div class="flex items-center gap-3"><button onclick="window.navigate('seller')" class="btn-primary text-sm py-2 px-4"><i class="fas fa-user-circle mr-1"></i>Seller Account</button><button onclick="window.doLogout()" class="text-gray-600 hover:text-gray-900"><i class="fas fa-sign-out-alt"></i> Logout</button></div>`;
+      mob.innerHTML = `<button onclick="window.navigate('seller');window.closeMobileMenu()" class="sidebar-link"><i class="fas fa-user-circle mr-3"></i> Seller Account</button><button onclick="window.doLogout();window.closeMobileMenu()" class="sidebar-link text-red-300"><i class="fas fa-sign-out-alt mr-3"></i> Logout</button>`;
+    } else {
+      btns.innerHTML = `<div class="flex gap-2"><button onclick="window.navigate('auth',{mode:'login'})" class="btn-outline text-sm py-2 px-4"><i class="fas fa-sign-in-alt mr-1"></i>Login</button><button onclick="window.navigate('auth',{mode:'register'})" class="btn-primary text-sm py-2 px-4"><i class="fas fa-user-plus mr-1"></i>Register</button></div>`;
+      mob.innerHTML = `<button onclick="window.navigate('auth',{mode:'login'});window.closeMobileMenu()" class="sidebar-link"><i class="fas fa-key mr-3"></i> Login</button><button onclick="window.navigate('auth',{mode:'register'});window.closeMobileMenu()" class="sidebar-link text-orange-300"><i class="fas fa-store mr-3"></i> Register</button>`;
+    }
+  };
+  window.doLogout = async () => { await supabaseClient.auth.signOut(); window.currentUser = null; window.currentUserData = null; window.toast('Logged out'); window.navigate('home'); };
+
+  // ========== UPGRADE ==========
+  window.upgradeToPlan = async (plan) => {
+    if (!window.currentUser) return window.toast('Please login', 'error');
+    window.open(PESAPAL_URLS[plan] || PESAPAL_URLS.basic, '_blank');
+    window.toast('✅ Thanks for payment! Wait for admin approval.', 'info');
+    const user = window.currentUserData || {};
+    const userName = user.business_name || 'Unknown Seller';
+    const userEmail = window.currentUser?.email || '';
+    const amount = plan === 'basic' ? 'TZS 5,000' : 'TZS 10,000';
+    const time = new Date().toLocaleString();
+    if (EMAILJS_USER_ID && EMAILJS_USER_ID !== "YOUR_PUBLIC_KEY") {
+      try {
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ service_id: EMAILJS_SERVICE_ID, template_id: EMAILJS_TEMPLATE_ID, user_id: EMAILJS_USER_ID, template_params: { name: userName, email: userEmail, plan: plan.toUpperCase(), amount, time } })
+        });
+      } catch(e) { console.error(e); }
+    }
+  };
+
+  // ========== FORGOT PASSWORD ==========
+  window.showForgotPassword = () => { document.getElementById('forgotPasswordModal').classList.remove('hidden'); document.getElementById('resetEmail').value=''; document.getElementById('resetMsg').classList.add('hidden'); };
+  function closeForgotModal(e) { if (e.target === document.getElementById('forgotPasswordModal')) document.getElementById('forgotPasswordModal').classList.add('hidden'); }
+  window.doForgotPassword = async () => {
+    const email = document.getElementById('resetEmail').value.trim(), msgEl = document.getElementById('resetMsg');
+    if (!email) { msgEl.textContent='Please enter your email.'; msgEl.className='text-sm text-center mt-3 text-red-500'; msgEl.classList.remove('hidden'); return; }
+    try {
+      await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://bongomarket.netlify.app?reset=true' });
+      msgEl.textContent='✅ Password reset email sent! Check your inbox.'; msgEl.className='text-sm text-center mt-3 text-teal-600 font-semibold'; msgEl.classList.remove('hidden');
+      setTimeout(() => document.getElementById('forgotPasswordModal').classList.add('hidden'), 3000);
+    } catch(e) { msgEl.textContent='❌ Error: '+e.message; msgEl.className='text-sm text-center mt-3 text-red-500'; msgEl.classList.remove('hidden'); }
+  };
+  window.showPasswordResetForm = () => {
+    document.getElementById('app').innerHTML = `<div class="page min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50"><div class="max-w-md w-full bg-white rounded-2xl shadow-sm border p-6 md:p-8"><div class="text-center mb-6"><span class="brand-mark mx-auto mb-3">BM</span><h2 class="text-2xl font-bold">Set New Password</h2></div><div><input id="new-pass" type="password" placeholder="New Password" class="form-input mb-3" /><input id="new-pass2" type="password" placeholder="Confirm Password" class="form-input mb-4" /><button onclick="window.doUpdatePassword()" class="btn-teal w-full py-3"><i class="fas fa-lock mr-2"></i>Update Password</button></div></div></div>`;
+  };
+  window.doUpdatePassword = async () => {
+    const pass = document.getElementById('new-pass').value, pass2 = document.getElementById('new-pass2').value;
+    if (!pass || !pass2) return window.toast('Please fill both fields.', 'error');
+    if (pass !== pass2) return window.toast('Passwords do not match.', 'error');
+    if (pass.length < 6) return window.toast('Password must be at least 6 characters.', 'error');
+    const { error } = await supabaseClient.auth.updateUser({ password: pass });
+    if (error) window.toast('Failed: ' + error.message, 'error');
+    else { window.toast('Password updated! You can now login.', 'success'); window.navigate('auth', { mode: 'login' }); }
+  };
+
+  // ========== PRODUCTS ==========
+  window.loadProducts = async () => {
+    try {
+      const { data, error } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      window.allProducts = data || []; window.allProducts.sort((a, b) => (b.is_recommended ? 1 : 0) - (a.is_recommended ? 1 : 0));
+      window.renderProductGrid();
+    } catch(e) { if(document.getElementById('products-grid')) document.getElementById('products-grid').innerHTML = `<div class="empty-state">Failed to load products.</div>`; }
+  };
+  window.renderProductGrid = () => {
+    let filtered = window.allProducts.filter(p => (window.locationFilter === 'all' || p.location === window.locationFilter) && (window.currentCategory === 'All' || p.category === window.currentCategory));
+    const grid = document.getElementById('products-grid'); if(!grid) return;
+    document.getElementById('products-count').textContent = `${filtered.length} products`;
+    if (filtered.length === 0) { grid.innerHTML = `<div class="empty-state">No products found.</div>`; return; }
+    grid.innerHTML = `<div class="products-grid">${filtered.map(p => window.productCard(p)).join('')}</div>`;
+  };
+  window.productCard = (p) => {
+    const img = p.image_url ? `<img src="${p.image_url}" alt="">` : `<div class="h-48 bg-gray-100 flex items-center justify-center text-4xl text-gray-400"><i class="fas fa-cube icon-3d"></i></div>`;
+    const trusted = p.is_recommended ? '<span class="trusted-badge"><i class="fas fa-crown"></i> Trusted</span>' : '';
+    const premium = (p.seller_plan === 'premium') ? '<span class="premium-badge ml-1"><i class="fas fa-crown"></i> Premium Seller</span>' : '';
+    return `<div class="product-card cursor-pointer" onclick="window.navigate('product',{id:'${p.id}'})"><div class="relative">${img}<span class="badge-loc absolute top-2 right-2"><i class="fas ${p.location==='Zanzibar'?'fa-umbrella-beach':'fa-city'} mr-1"></i>${p.location}</span></div><div class="p-4">${p.category?`<span class="cat-tag">${p.category}</span>`:''} ${trusted} ${premium}<h3 class="font-bold mt-2">${p.product_name}</h3><p class="text-teal-700 font-extrabold text-xl">TZS ${Number(p.price).toLocaleString()}</p><button class="btn-primary w-full mt-3 text-sm py-2" onclick="event.stopPropagation();window.orderWhatsApp('${p.id}')"><i class="fab fa-whatsapp"></i> WhatsApp</button></div></div>`;
+  };
+  window.filterByCategory = (cat) => { window.currentCategory = cat; window.renderProductGrid(); };
+  window.setLocFilter = (loc) => { window.locationFilter = loc; window.renderProductGrid(); };
+
+  // ========== SEARCH WITH SELLER NAME ==========
+  window.doSearch = (q) => { if(q.trim()) window.navigate('search', {q: q.trim()}); };
+  window.renderSearch = async (q) => {
+    document.getElementById('app').innerHTML = `<div class="page max-w-7xl mx-auto px-4 py-8"><h2 class="section-title mb-6">Search Results for "${q}"</h2><div id="search-results-grid" class="products-grid"><div class="spinner"></div></div></div>`;
+    await window.loadProducts();
+    const query = q.toLowerCase();
+    const results = window.allProducts.filter(p => 
+      p.product_name.toLowerCase().includes(query) || 
+      (p.description && p.description.toLowerCase().includes(query)) ||
+      (p.seller_name && p.seller_name.toLowerCase().includes(query))
+    );
+    const grid = document.getElementById('search-results-grid');
+    if (results.length === 0) { grid.innerHTML = `<div class="empty-state col-span-full">No products or sellers found for "${q}"</div>`; }
+    else { grid.innerHTML = results.map(p => window.productCard(p)).join(''); }
+  };
+
+  // ========== WHATSAPP ORDER ==========
+  window.orderWhatsApp = (id) => { 
+    const p = window.allProducts.find(x=>x.id===id);
+    if(!p || !p.seller_phone) return;
+    const message = `Hi, I'm interested in *${p.product_name}* (TZS ${Number(p.price).toLocaleString()}) from ${p.seller_name || 'Bongo Seller'}. Is it still available?`;
+    window.open(`https://wa.me/${p.seller_phone.replace(/\D/g,'')}?text=${encodeURIComponent(message)}`);
+  };
+
+  // ========== PRODUCT VIEW WITH CLOSE BUTTON ==========
+  window.renderProduct = async (id) => {
+    const { data: p, error } = await supabaseClient.from('products').select('*').eq('id', id).single();
+    if (error || !p) { document.getElementById('app').innerHTML = `<div class="page text-center py-20">Product not found</div>`; return; }
+    const trustedBadge = p.is_recommended ? '<span class="trusted-badge ml-2"><i class="fas fa-crown"></i> Trusted</span>' : '';
+    const premiumBadge = (p.seller_plan === 'premium') ? '<span class="premium-badge ml-2"><i class="fas fa-crown"></i> Premium Seller</span>' : '';
+    document.getElementById('app').innerHTML = `
+      <div class="page max-w-5xl mx-auto px-4 py-8 relative">
+        <span class="close-product" onclick="window.navigate('home')"><i class="fas fa-times"></i></span>
+        <div class="bg-white rounded-2xl border p-6 md:p-8">
+          <div class="grid md:grid-cols-2 gap-8">
+            <div>${p.image_url ? `<img src="${p.image_url}" class="w-full rounded-xl" />` : `<div class="bg-gray-100 h-80 flex items-center justify-center rounded-xl"><i class="fas fa-cube text-6xl text-gray-400"></i></div>`}</div>
+            <div>
+              <div class="flex items-center gap-2 mb-2"><span class="cat-tag">${p.category || 'General'}</span><span class="badge-loc"><i class="fas ${p.location==='Zanzibar'?'fa-umbrella-beach':'fa-city'} mr-1"></i>${p.location}</span>${trustedBadge}${premiumBadge}</div>
+              <h1 class="text-3xl font-bold mb-2">${p.product_name}</h1>
+              <p class="text-4xl font-extrabold text-teal-700 mb-6">TZS ${Number(p.price).toLocaleString()}</p>
+              <p class="text-gray-600 mb-6">${p.description || 'No description provided.'}</p>
+              <div class="bg-gray-50 p-4 rounded-xl mb-6"><p class="font-semibold">Seller: ${p.seller_name || 'BongoMarket Seller'}</p></div>
+              <button onclick="window.orderWhatsApp('${p.id}')" class="btn-wa w-full"><i class="fab fa-whatsapp text-2xl"></i> Order via WhatsApp</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  // ========== HOME ==========
+  window.renderHome = async () => {
+    document.getElementById('app').innerHTML = `<div class="page"><section class="hero py-10 md:py-12 px-4 border-b border-gray-100"><div class="max-w-4xl mx-auto text-center"><div class="hero-badge"><i class="fas fa-globe-africa icon-3d mr-2"></i>Zanzibar · Dar es Salaam</div><h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 mb-3">Your Market,<br/><span class="text-teal-600">Online</span></h1><p class="text-gray-500 text-base md:text-lg mb-8 max-w-xl mx-auto">Discover quality products from trusted sellers. Connect directly via WhatsApp.</p><div class="search-wrap max-w-xl mx-auto mb-6"><input id="hero-search" placeholder="Search products & sellers" onkeydown="if(event.key==='Enter')window.doSearch(this.value)" /><button onclick="window.doSearch(document.getElementById('hero-search').value)"><i class="fas fa-search"></i> Search</button></div><div class="flex justify-center gap-3 flex-wrap"><button onclick="window.setLocFilter('all')" class="loc-pill active" id="loc-all"><i class="fas fa-map-marked-alt mr-1"></i>All Locations</button><button onclick="window.setLocFilter('Zanzibar')" class="loc-pill" id="loc-zanzibar"><i class="fas fa-umbrella-beach mr-1"></i>Zanzibar</button><button onclick="window.setLocFilter('Dar es Salaam')" class="loc-pill" id="loc-dar"><i class="fas fa-city mr-1"></i>Dar es Salaam</button></div></div></section><section class="max-w-7xl mx-auto px-4 py-8"><h2 class="section-title text-2xl mb-4"><i class="fas fa-cubes icon-3d mr-2"></i>Browse <span>Categories</span></h2><div class="flex gap-3 flex-wrap">${['All', ...ALL_CATEGORIES].map(c=>`<button onclick="window.filterByCategory('${c}')" class="filter-pill ${c==='All'?'active':''}"><i class="fas fa-tag mr-1"></i>${c}</button>`).join('')}</div></section><section class="max-w-7xl mx-auto px-4 py-4"><div class="flex justify-between items-end mb-4"><h2 class="section-title text-2xl"><i class="fas fa-box-open icon-3d mr-2"></i>All <span>Products</span></h2><span id="products-count" class="text-sm text-gray-500"></span></div><div id="products-grid"><div class="flex justify-center py-12"><div class="spinner"></div></div></div></section><section class="bg-gray-50 border-y border-gray-200 py-16 px-4 text-center mt-8"><i class="fas fa-rocket icon-3d text-5xl text-teal-600 mb-4"></i><h2 class="text-3xl font-bold text-gray-800">Are you a seller?</h2><p class="text-gray-600 mb-6">List your products for free and reach many buyers.</p><button onclick="window.navigate('auth',{mode:'register'})" class="btn-primary text-lg px-8 py-3"><i class="fas fa-store mr-2"></i>Start Selling Free →</button></section></div>`;
+    window.loadProducts();
+  };
+
+  // ========== AUTH ==========
+  window.renderAuth = function(mode) {
+    const isLogin = mode === 'login';
+    document.getElementById('app').innerHTML = `<div class="page min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50"><div class="max-w-md w-full bg-white rounded-2xl shadow-sm border p-6 md:p-8"><div class="text-center mb-6"><span class="brand-mark mx-auto mb-3">BM</span><h2 class="text-2xl font-bold">${isLogin?'Login':'Register'}</h2></div><div class="flex rounded-xl overflow-hidden mb-6 border"><button onclick="window.navigate('auth',{mode:'login'})" class="flex-1 py-2 ${isLogin?'bg-teal-600 text-white':'bg-gray-100'}"><i class="fas fa-sign-in-alt mr-1"></i>Login</button><button onclick="window.navigate('auth',{mode:'register'})" class="flex-1 py-2 ${!isLogin?'bg-orange-500 text-white':'bg-gray-100'}"><i class="fas fa-user-plus mr-1"></i>Register</button></div>${isLogin ? `<div><input id="l-email" type="email" placeholder="Email" class="form-input mb-3" /><input id="l-pass" type="password" placeholder="Password" class="form-input mb-4" /><button onclick="window.doLogin()" class="btn-teal w-full py-3"><i class="fas fa-sign-in-alt mr-2"></i>Login</button><p class="text-center mt-4"><a href="#" onclick="window.showForgotPassword()" class="text-sm text-teal-600 hover:underline font-semibold"><i class="fas fa-question-circle mr-1"></i>Forgot Password?</a></p></div>` : `<div><input id="r-bname" placeholder="Business Name" class="form-input mb-3" /><input id="r-email" type="email" placeholder="Email" class="form-input mb-3" /><input id="r-phone" placeholder="Phone Number (255...)" class="form-input mb-3" /><select id="r-loc" class="form-input mb-3"><option value="">Select Location</option><option>Zanzibar</option><option>Dar es Salaam</option></select><input id="r-pass" type="password" placeholder="Password" class="form-input mb-3" /><input id="r-pass2" type="password" placeholder="Confirm Password" class="form-input mb-4" /><button onclick="window.doRegister()" class="btn-primary w-full py-3"><i class="fas fa-check-circle mr-2"></i>Create Account</button></div>`}</div></div>`;
+  };
+  window.doLogin = async () => {
+    const email = document.getElementById('l-email').value.trim(), pass = document.getElementById('l-pass').value;
+    if(!email||!pass) return window.toast('Please fill all fields','error');
+    try { const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass }); if (error) throw error; window.toast('Login successful!'); } catch(e) { window.toast(e.message,'error'); }
+  };
+  window.doRegister = async () => {
+    const bname = document.getElementById('r-bname').value.trim(), email = document.getElementById('r-email').value.trim(), phone = document.getElementById('r-phone').value.trim(), loc = document.getElementById('r-loc').value, pass = document.getElementById('r-pass').value, pass2 = document.getElementById('r-pass2').value;
+    if(!bname||!email||!phone||!loc||!pass) return window.toast('Please fill all fields','error');
+    if(pass!==pass2) return window.toast('Passwords do not match','error');
+    if(pass.length<6) return window.toast('Password must be at least 6 characters','error');
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({ email, password: pass, options: { data: { business_name: bname, phone_number: phone, location: loc } } });
+      if (error) throw error;
+      await supabaseClient.from('users').update({ business_name: bname, phone_number: phone, location: loc }).eq('id', data.user.id);
+      window.toast('Account created! Please check your email for confirmation if required.');
+    } catch(e) { window.toast(e.message,'error'); }
+  };
+
+  // ========== SELLER ACCOUNT ==========
+  window.renderSellerAccount = async () => {
+    if (!window.currentUser) return window.navigate('auth');
+    if (!window.currentUserData) await loadUserData();
+    document.getElementById('app').innerHTML = `<div class="page flex flex-col md:flex-row min-h-screen bg-gray-50"><aside id="sidebar" class="w-full md:w-64 p-6 text-white hidden md:block"><div class="mb-8"><span class="brand-mark mb-2">BM</span><p class="text-sm opacity-70">Seller Account</p></div><button onclick="window.switchSellerView('profile')" class="sidebar-link w-full text-left ${window.sellerView=='profile'?'active':''}"><i class="fas fa-user-circle mr-3"></i>Profile</button><button onclick="window.switchSellerView('dashboard')" class="sidebar-link w-full text-left ${window.sellerView=='dashboard'?'active':''}"><i class="fas fa-th-large mr-3"></i>Dashboard</button><button onclick="window.switchSellerView('support')" class="sidebar-link w-full text-left ${window.sellerView=='support'?'active':''}"><i class="fas fa-headset mr-3"></i>Support</button><button onclick="window.navigate('home')" class="sidebar-link w-full text-left mt-8"><i class="fas fa-home mr-3"></i>Market</button></aside><div class="flex-1 p-4 md:p-6"><div id="seller-content"></div></div><div class="mobile-bottom-nav"><button class="${window.sellerView=='profile'?'active':''}" onclick="window.switchSellerView('profile')"><i class="fas fa-user-circle"></i><span>Profile</span></button><button class="${window.sellerView=='dashboard'?'active':''}" onclick="window.switchSellerView('dashboard')"><i class="fas fa-th-large"></i><span>Dashboard</span></button><button class="${window.sellerView=='support'?'active':''}" onclick="window.switchSellerView('support')"><i class="fas fa-headset"></i><span>Support</span></button></div></div>`;
+    if (window.sellerView === 'profile') window.renderProfile();
+    else if (window.sellerView === 'dashboard') window.renderDashboardView();
+    else if (window.sellerView === 'support') window.renderSupport();
+  };
+  window.switchSellerView = (view) => { window.sellerView = view; window.renderSellerAccount(); };
+
+  // Support page
+  window.renderSupport = () => {
+    document.getElementById('seller-content').innerHTML = `<div class="max-w-4xl mx-auto"><div class="support-card text-center"><i class="fas fa-headset text-5xl text-teal-600 mb-4"></i><h3>Customer Support</h3><p class="text-gray-500 mb-6">Need help? Contact us directly via WhatsApp.</p><div class="mb-6"><p class="text-sm text-gray-500 mb-1">Support Number</p><p class="support-number">+255 779 443 545</p></div><a href="https://wa.me/${SUPPORT_WHATSAPP}?text=Hello%20Bongo%20Market%20Support,%20I%20need%20assistance." target="_blank" class="btn-wa inline-flex items-center gap-2 px-8 py-4 text-lg"><i class="fab fa-whatsapp text-2xl"></i> Chat on WhatsApp</a><p class="text-xs text-gray-400 mt-4">We typically reply within a few hours.</p></div></div>`;
+  };
+
+  // Profile page (simplified for space - but fully functional)
+  window.renderProfile = () => {
+    const user = window.currentUserData || {};
+    const plan = user.plan || 'free', trusted = user.is_trusted_seller || false;
+    const expiry = user.expiry_date;
+    let daysLeft = null;
+    if (expiry && (plan === 'basic' || plan === 'premium')) daysLeft = Math.max(0, Math.ceil((new Date(expiry) - new Date()) / (1000 * 60 * 60 * 24)));
+    const planDisplay = plan === 'free' ? 'Free' : `${plan}${trusted?' ⭐':''}${daysLeft ? ` (${daysLeft} days left)` : ''}`;
+    let upgradeHtml = '';
+    if (plan === 'premium') upgradeHtml = `<div class="premium-thankyou"><i class="fas fa-crown"></i><h3>You are a Premium Seller!</h3><p>Thank you for upgrading. Enjoy full access to all BongoMarket services.</p></div>`;
+    else if (plan === 'basic') upgradeHtml = `<div class="grid grid-cols-1 gap-5"><div class="plan-card bg-white border shadow-sm opacity-50"><div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600"><i class="fas fa-chart-line"></i></div><h4 class="text-lg font-bold">Basic (Current)</h4></div><p class="text-3xl font-bold mb-3">TZS 5,000 /mo</p><ul class="space-y-2 mb-6 text-sm"><li><i class="fas fa-check-circle text-teal-600"></i> 20 Products</li><li><i class="fas fa-check-circle text-teal-600"></i> Slight Priority</li></ul><button disabled class="w-full py-3 bg-gray-100 text-gray-500 rounded-xl font-bold">Current Plan</button></div><div class="plan-card premium"><div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-gray-900"><i class="fas fa-crown"></i></div><h4 class="text-lg font-bold text-white">Premium</h4></div><p class="text-3xl font-bold mb-3 text-white">TZS 10,000 /mo</p><ul class="space-y-2 mb-6 text-sm text-white/90"><li><i class="fas fa-check-circle text-amber-400"></i> Unlimited Products</li><li><i class="fas fa-check-circle text-amber-400"></i> ✔ Trusted Seller Badge</li><li><i class="fas fa-check-circle text-amber-400"></i> Highest Priority</li></ul><button onclick="window.upgradeToPlan('premium')" class="w-full py-3 bg-amber-500 text-gray-900 font-extrabold rounded-xl hover:bg-amber-600">Become Trusted Seller</button></div></div>`;
+    else upgradeHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-5"><div class="plan-card bg-white border shadow-sm"><div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600"><i class="fas fa-chart-line"></i></div><h4 class="text-lg font-bold">Basic</h4></div><p class="text-3xl font-bold mb-3">TZS 5,000 /mo</p><ul class="space-y-2 mb-6 text-sm"><li><i class="fas fa-check-circle text-teal-600"></i> 20 Products</li><li><i class="fas fa-check-circle text-teal-600"></i> Slight Priority</li></ul><button onclick="window.upgradeToPlan('basic')" class="w-full py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700">Choose Basic</button></div><div class="plan-card premium"><div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-gray-900"><i class="fas fa-crown"></i></div><h4 class="text-lg font-bold text-white">Premium</h4></div><p class="text-3xl font-bold mb-3 text-white">TZS 10,000 /mo</p><ul class="space-y-2 mb-6 text-sm text-white/90"><li><i class="fas fa-check-circle text-amber-400"></i> Unlimited Products</li><li><i class="fas fa-check-circle text-amber-400"></i> ✔ Trusted Seller Badge</li><li><i class="fas fa-check-circle text-amber-400"></i> Highest Priority</li></ul><button onclick="window.upgradeToPlan('premium')" class="w-full py-3 bg-amber-500 text-gray-900 font-extrabold rounded-xl hover:bg-amber-600">Become Trusted Seller</button></div></div>`;
+    document.getElementById('seller-content').innerHTML = `<div class="max-w-4xl mx-auto"><div class="bg-white rounded-2xl shadow-sm border p-5 md:p-6 mb-6"><div class="flex flex-col sm:flex-row justify-between items-start gap-4"><div class="flex items-center gap-4"><div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white text-3xl font-bold">${user.business_name?.charAt(0) || 'B'}</div><div><h2 class="text-xl md:text-2xl font-bold">${user.business_name || 'My Business'}</h2><div class="flex items-center gap-2 mt-1">${trusted?'<span class="trusted-badge"><i class="fas fa-crown"></i> Trusted</span>':'<span class="text-sm text-gray-500">Regular Seller</span>'}</div></div></div><button onclick="window.toggleEditProfile()" class="btn-outline text-sm w-full sm:w-auto"><i class="fas fa-edit mr-1"></i>Edit Profile</button></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6"><div><p class="text-sm text-gray-500">Phone Number</p><p class="font-semibold">${user.phone_number || 'Not set'}</p></div><div><p class="text-sm text-gray-500">Location</p><p class="font-semibold">${user.location || 'Not set'}</p></div><div><p class="text-sm text-gray-500">Email</p><p class="font-semibold">${window.currentUser?.email || ''}</p></div><div><p class="text-sm text-gray-500">Current Plan</p><p class="font-semibold">${planDisplay}</p></div></div><div id="edit-profile-form" class="hidden mt-6 border-t pt-6"><h3 class="text-lg font-bold mb-4">Edit Profile</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input id="edit-bname" placeholder="Business Name" class="form-input" value="${user.business_name || ''}" /><input id="edit-phone" placeholder="Phone Number (255...)" class="form-input" value="${user.phone_number || ''}" /><select id="edit-loc" class="form-input"><option value="Zanzibar" ${user.location==='Zanzibar'?'selected':''}>Zanzibar</option><option value="Dar es Salaam" ${user.location==='Dar es Salaam'?'selected':''}>Dar es Salaam</option></select></div><div class="flex gap-3 mt-4"><button onclick="window.saveProfile()" class="btn-primary flex-1">Save</button><button onclick="window.toggleEditProfile()" class="btn-outline flex-1">Cancel</button></div><div class="mt-6 pt-6 border-t"><h3 class="text-lg font-bold mb-3">🔒 Change Password</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input id="edit-new-pass" type="password" placeholder="New Password" class="form-input" /><input id="edit-new-pass2" type="password" placeholder="Confirm New Password" class="form-input" /></div><button onclick="window.changePassword()" class="btn-primary mt-4">Update Password</button></div></div></div><div class="bg-white rounded-2xl shadow-sm border p-5 md:p-6"><h3 class="text-xl font-bold mb-4">${plan === 'premium' ? '🎉 Your Premium Benefits' : 'Upgrade Your Plan'}</h3>${upgradeHtml}</div></div>`;
+  };
+  window.toggleEditProfile = () => { document.getElementById('edit-profile-form')?.classList.toggle('hidden'); };
+  window.saveProfile = async () => {
+    const bname = document.getElementById('edit-bname').value.trim(), phone = document.getElementById('edit-phone').value.trim(), loc = document.getElementById('edit-loc').value;
+    if (!bname || !phone || !loc) return window.toast('Please fill all fields','error');
+    await supabaseClient.from('users').update({ business_name: bname, phone_number: phone, location: loc }).eq('id', window.currentUser.id);
+    window.currentUserData = { ...window.currentUserData, business_name: bname, phone_number: phone, location: loc };
+    window.toast('Profile updated!'); window.renderSellerAccount();
+  };
+  window.changePassword = async () => {
+    const pass = document.getElementById('edit-new-pass').value, pass2 = document.getElementById('edit-new-pass2').value;
+    if (!pass || !pass2) return window.toast('Please fill both password fields.', 'error');
+    if (pass !== pass2) return window.toast('Passwords do not match.', 'error');
+    if (pass.length < 6) return window.toast('Password must be at least 6 characters.', 'error');
+    const { error } = await supabaseClient.auth.updateUser({ password: pass });
+    if (error) window.toast('Failed: ' + error.message, 'error');
+    else { window.toast('Password updated successfully!', 'success'); document.getElementById('edit-new-pass').value = ''; document.getElementById('edit-new-pass2').value = ''; }
+  };
+
+  // Dashboard with compact product cards
+  window.renderDashboardView = async () => {
+    const cont = document.getElementById('seller-content');
+    cont.innerHTML = `<div class="spinner mx-auto"></div>`;
+    const { data: prods, error } = await supabaseClient.from('products').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false });
+    if (error) { cont.innerHTML = `<div class="bg-white p-6 rounded-2xl text-center border">Error loading products</div>`; return; }
+    const plan = window.currentUserData?.plan || 'free';
+    const maxProducts = plan === 'free' ? 5 : (plan === 'basic' ? 20 : Infinity);
+    const trusted = window.currentUserData?.is_trusted_seller || false;
+    const productCount = prods.length;
+    const expiry = window.currentUserData?.expiry_date;
+    let daysLeft = null;
+    if (expiry && (plan === 'basic' || plan === 'premium')) daysLeft = Math.max(0, Math.ceil((new Date(expiry) - new Date()) / (1000 * 60 * 60 * 24)));
+    const planDisplay = plan === 'free' ? 'Free' : `${plan}${trusted?' ⭐':''}${daysLeft ? ` (${daysLeft}d left)` : ''}`;
+    let upgradePrompt = '';
+    if (plan === 'free') upgradePrompt = `<div class="upgrade-prompt"><i class="fas fa-arrow-circle-up"></i><div><strong>Upgrade to become a Trusted Seller!</strong><br><span class="text-sm"><a href="#" onclick="window.switchSellerView('profile')" class="underline font-bold">Upgrade now →</a></span></div></div>`;
+    cont.innerHTML = `
+      <div class="max-w-6xl mx-auto">
+        ${upgradePrompt}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mb-6">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white text-2xl font-bold">${window.currentUserData?.business_name?.charAt(0) || 'B'}</div>
+            <div><h2 class="text-lg font-bold">${window.currentUserData?.business_name || 'My Business'}</h2><div class="mt-1">${trusted?'<span class="trusted-badge"><i class="fas fa-crown"></i> Trusted Seller</span>':'<span class="text-xs text-gray-500">Regular Seller</span>'}</div></div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 shadow-sm border flex items-center justify-between">
+            <div><p class="text-sm text-gray-500">Products</p><p class="text-2xl font-bold">${productCount} <span class="text-base font-normal text-gray-400">/ ${maxProducts}</span></p></div>
+            <div class="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-teal-700"><i class="fas fa-boxes text-xl"></i></div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 shadow-sm border flex items-center justify-between">
+            <div><p class="text-sm text-gray-500">Plan</p><p class="text-xl font-bold capitalize">${planDisplay}</p></div>
+            <div class="w-12 h-12 ${trusted?'bg-amber-100 text-amber-600':'bg-teal-50 text-teal-700'} rounded-xl flex items-center justify-center"><i class="fas ${trusted?'fa-crown':'fa-seedling'} text-xl"></i></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold"><i class="fas fa-box-open mr-2"></i>My Products</h3>
+            <button onclick="window.showAddProductForm()" class="btn-primary"><i class="fas fa-plus mr-1"></i>Add Product</button>
+          </div>
+          ${productCount === 0 ? `<div class="empty-state">No products yet.</div>` : 
+            `<div class="space-y-2">${prods.map(p => `
+              <div class="flex items-center bg-gray-50 rounded-xl p-2 gap-3">
+                ${p.image_url?`<img src="${p.image_url}" class="w-14 h-14 object-cover rounded-lg flex-shrink-0">`:`<div class="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-cube text-xl text-teal-600"></i></div>`}
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-sm truncate">${p.product_name}</h4>
+                  <p class="text-xs text-gray-500">${p.category || ''} · TZS ${p.price}</p>
+                </div>
+                <div class="flex gap-1">
+                  <button onclick="window.startEdit('${p.id}')" class="btn-outline text-xs py-1 px-2"><i class="fas fa-edit"></i></button>
+                  <button onclick="window.deleteProduct('${p.id}')" class="text-red-500 text-xs p-1"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>
+            `).join('')}</div>`
+          }
+        </div>
+      </div>
+    `;
+  };
+
+  // Add/Edit/Delete Product (fully functional, unchanged)
+  window.showAddProductForm = () => window.renderAddProductForm();
+  window.renderAddProductForm = async () => {
+    const cont = document.getElementById('seller-content');
+    const plan = window.currentUserData?.plan || 'free';
+    const maxProducts = plan === 'free' ? 5 : (plan === 'basic' ? 20 : Infinity);
+    const { count } = await supabaseClient.from('products').select('*', { count: 'exact', head: true }).eq('user_id', window.currentUser.id);
+    if (count >= maxProducts) { cont.innerHTML = `<div class="bg-white p-6 rounded-2xl text-center border"><i class="fas fa-exclamation-triangle text-5xl text-orange-500 mb-4"></i><h3 class="text-xl font-bold">Limit Reached</h3><p>You have ${count}/${maxProducts} products. Upgrade to add more.</p><div class="flex gap-3 mt-6"><button onclick="window.upgradeToPlan('premium')" class="btn-primary">Upgrade</button><button onclick="window.renderDashboardView()" class="btn-outline">Back</button></div></div>`; return; }
+    const categoryOptions = ALL_CATEGORIES.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    cont.innerHTML = `<div class="max-w-2xl mx-auto bg-white p-5 md:p-6 rounded-2xl border"><h3 class="text-xl font-bold mb-4">Add New Product</h3><input id="p-name" placeholder="Product Name *" class="form-input mb-3" /><input id="p-price" type="number" placeholder="Price (TZS) *" class="form-input mb-3" /><select id="p-cat" class="form-input mb-3"><option value="">Select Category</option>${categoryOptions}</select><select id="p-loc" class="form-input mb-3"><option value="">Location</option><option>Zanzibar</option><option>Dar es Salaam</option></select><textarea id="p-desc" placeholder="Description" class="form-input mb-3"></textarea><div class="mb-4"><label class="font-semibold block mb-2">Product Image *</label><div class="upload-area p-4" onclick="document.getElementById('p-img-file').click()"><i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i><p>Click to select</p><img id="img-preview" class="mt-3 mx-auto max-h-32 hidden rounded" /></div><input type="file" id="p-img-file" accept="image/*" class="hidden" onchange="window.handleImageSelect(event)" /></div><div class="flex gap-3"><button onclick="window.saveProduct()" class="btn-primary flex-1 py-3"><i class="fas fa-cloud-upload-alt mr-2"></i>Publish</button><button onclick="window.renderDashboardView()" class="btn-outline flex-1 py-3">Cancel</button></div></div>`;
+  };
+  window.handleImageSelect = (e) => { const file = e.target.files[0]; if(!file) return; window.pendingImageFile = file; const reader = new FileReader(); reader.onload = (ev) => { document.getElementById('img-preview').src = ev.target.result; document.getElementById('img-preview').classList.remove('hidden'); }; reader.readAsDataURL(file); };
+  window.startEdit = (id) => { window._navData = {productId:id}; window.renderEditProductForm(id); };
+  window.deleteProduct = async (id) => { if(!confirm('Delete?')) return; await supabaseClient.from('products').delete().eq('id', id); window.toast('Deleted'); window.renderDashboardView(); };
+  window.renderEditProductForm = async (id) => {
+    const cont = document.getElementById('seller-content'); cont.innerHTML = `<div class="spinner"></div>`;
+    const { data: p } = await supabaseClient.from('products').select('*').eq('id', id).single();
+    if (!p) return window.renderDashboardView();
+    const categoryOptions = ALL_CATEGORIES.map(cat => `<option value="${cat}" ${p.category===cat?'selected':''}>${cat}</option>`).join('');
+    cont.innerHTML = `<div class="max-w-2xl mx-auto bg-white p-5 md:p-6 rounded-2xl border"><h3 class="text-xl font-bold mb-4">Edit Product</h3><input id="p-name" value="${p.product_name||''}" class="form-input mb-3" /><input id="p-price" type="number" value="${p.price||''}" class="form-input mb-3" /><select id="p-cat" class="form-input mb-3"><option value="">Select Category</option>${categoryOptions}</select><select id="p-loc" class="form-input mb-3"><option ${p.location==='Zanzibar'?'selected':''}>Zanzibar</option><option ${p.location==='Dar es Salaam'?'selected':''}>Dar es Salaam</option></select><textarea id="p-desc" class="form-input mb-3">${p.description||''}</textarea><div class="mb-4">${p.image_url?`<img src="${p.image_url}" class="w-32 h-32 object-cover rounded-lg mb-2" />`:''}<div class="upload-area p-4" onclick="document.getElementById('edit-img-file').click()"><i class="fas fa-cloud-upload-alt"></i> Upload new image</div><input type="file" id="edit-img-file" accept="image/*" class="hidden" onchange="window.handleEditImageSelect(event)" /></div><div class="flex gap-3"><button onclick="window.saveProduct('${id}')" class="btn-primary flex-1 py-3"><i class="fas fa-save mr-2"></i>Save</button><button onclick="window.renderDashboardView()" class="btn-outline flex-1 py-3">Cancel</button></div></div>`;
+    window.pendingEditImageFile = null;
+  };
+  window.handleEditImageSelect = (e) => { if(e.target.files[0]) window.pendingEditImageFile = e.target.files[0]; };
+  async function uploadToCloudinary(file) {
+    const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET); fd.append('folder', 'bongo-market');
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
+    const data = await res.json(); if (data.error) throw new Error(data.error.message); return data.secure_url;
+  }
+  window.saveProduct = async (existingId=null) => {
+    const name = document.getElementById('p-name').value.trim(), price = document.getElementById('p-price').value, cat = document.getElementById('p-cat').value, loc = document.getElementById('p-loc').value, desc = document.getElementById('p-desc').value.trim();
+    if(!name||!price||!loc) return window.toast('Please fill required fields','error');
+    const selectedFile = existingId ? window.pendingEditImageFile : window.pendingImageFile;
+    if (!existingId && !selectedFile) return window.toast('Please select an image','error');
+    if (!existingId) {
+      const plan = window.currentUserData?.plan || 'free';
+      const maxProducts = plan === 'free' ? 5 : (plan === 'basic' ? 20 : Infinity);
+      const { count } = await supabaseClient.from('products').select('*', { count: 'exact', head: true }).eq('user_id', window.currentUser.id);
+      if (count >= maxProducts) return window.toast(`Limit reached (${maxProducts}). Upgrade to add more.`,'error');
+    }
+    try {
+      let imageUrl = existingId ? (document.querySelector('#seller-content img')?.src || null) : null;
+      if (selectedFile) { window.toast('Uploading...', 'info'); imageUrl = await uploadToCloudinary(selectedFile); }
+      const sellerPlan = window.currentUserData?.plan || 'free';
+      const productData = { product_name: name, price: Number(price), category: cat, location: loc, description: desc, image_url: imageUrl, user_id: window.currentUser.id, seller_name: window.currentUserData?.business_name || 'Seller', seller_phone: window.currentUserData?.phone_number || '', is_recommended: window.currentUserData?.is_trusted_seller || false, seller_plan: sellerPlan };
+      if (existingId) { await supabaseClient.from('products').update(productData).eq('id', existingId); window.toast('Product updated!'); }
+      else { await supabaseClient.from('products').insert(productData); window.toast('Product published!'); }
+      window.renderDashboardView();
+    } catch(e) { window.toast(e.message, 'error'); }
+  };
+
+  window.navigate('home');
+</script>
+</body>
+</html>
